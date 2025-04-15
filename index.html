@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Take a Photo</title>
+</head>
+<body>
+  <h2>Take a Photo</h2>
+  <video id="video" autoplay></video>
+  <br>
+  <button id="snap">Take Photo</button>
+  <canvas id="canvas" style="display:none;"></canvas>
+
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const context = canvas.getContext('2d');
+    const snap = document.getElementById('snap');
+
+    // Ask for camera access
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => {
+        video.srcObject = stream;
+      });
+
+    snap.onclick = () => {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const image = canvas.toDataURL('image/png');
+
+      // You can update this to send to a server or webhook
+      console.log("Image ready to be sent!");
+      alert("Image captured — now send it manually or update the code to send it automatically.");
+    };
+  </script>
+</body>
+</html>
