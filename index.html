@@ -14,6 +14,9 @@
 <body>
   <h2>Remote Device Control</h2>
 
+  <label for="deviceID">Enter Device ID:</label>
+  <input type="text" id="deviceID" placeholder="Enter device ID" /><br>
+
   <button onclick="sendCommand('take_picture')">Take Picture with Location</button><br>
   <button onclick="sendCommand('get_location')">Get Location</button><br>
   <button onclick="sendCommand('get_battery')">Get Battery Level</button><br>
@@ -25,24 +28,36 @@
 
   <script>
     function sendCommand(action) {
-      firebase.database().ref("command").set({ action });
-      alert(`Command sent: ${action}`);
+      const deviceID = document.getElementById("deviceID").value.trim();
+      if (!deviceID) {
+        alert("Please enter a device ID");
+        return;
+      }
+
+      firebase.database().ref("command").set({
+        action: action,
+        deviceID: deviceID
+      });
+      alert(`Command sent to device: ${deviceID}`);
     }
 
     function sendMessage() {
+      const deviceID = document.getElementById("deviceID").value.trim();
       const msg = document.getElementById("messageText").value.trim();
-      if (msg) {
-        firebase.database().ref("command").set({
-          action: "show_message",
-          text: msg
-        });
-        alert("Message sent!");
-      } else {
-        alert("Please enter a message");
+      if (!deviceID || !msg) {
+        alert("Please enter a device ID and a message");
+        return;
       }
+
+      firebase.database().ref("command").set({
+        action: "show_message",
+        text: msg,
+        deviceID: deviceID
+      });
+      alert("Message sent to device!");
     }
   </script>
 </body>
 </html>
 
-   
+
