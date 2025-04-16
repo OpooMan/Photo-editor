@@ -1,89 +1,46 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Listener Page</title>
-  
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
-
-  <script>
-    // Firebase Configuration
-    const firebaseConfig = {
-      apiKey: "your-api-key",
-      authDomain: "your-auth-domain",
-      projectId: "your-project-id",
-      storageBucket: "your-storage-bucket",
-      messagingSenderId: "your-sender-id",
-      appId: "your-app-id"
-    };
-
-    // Initialize Firebase
-    const app = firebase.initializeApp(firebaseConfig);
-    const database = firebase.database(app);
-
-    // Device ID generation (creates a unique entry for each device)
-    const deviceId = firebase.database().ref().child('devices').push().key;
-
-    // Register the device in Firebase
-    firebase.database().ref('devices/' + deviceId).set({
-      status: 'online',
-      location: null,
-      photo: null
-    });
-
-    // Listen for updates on the device's entry
-    firebase.database().ref('devices/' + deviceId).on('value', function(snapshot) {
-      const deviceData = snapshot.val();
-
-      if (deviceData.photo === 'take_picture') {
-        // Trigger picture capture
-        takePicture();
-      }
-
-      if (deviceData.location) {
-        // Send current location to Firebase
-        sendLocation(deviceData.location);
-      }
-    });
-
-    // Function to take a picture (camera access)
-    function takePicture() {
-      // Implement camera capture functionality here using HTML5 API
-      alert('Picture captured (functionality pending).');
-      
-      // Example of setting the photo in Firebase after capturing it
-      firebase.database().ref('devices/' + deviceId).update({
-        photo: 'image_url'  // Set image URL or placeholder
-      });
-    }
-
-    // Function to get the current location
-    function getLocation() {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(function(position) {
-          const location = {
-            lat: position.coords.latitude,
-            lon: position.coords.longitude
-          };
-          // Update the location in Firebase
-          firebase.database().ref('devices/' + deviceId).update({
-            location: location
-          });
-        });
-      } else {
-        console.error("Geolocation is not supported by this browser.");
-      }
-    }
-
-    // Call getLocation when the page loads
-    window.onload = getLocation;
-  </script>
+  <title>Device Listener</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 </head>
 <body>
-  <h1>Device is online</h1>
-  <p>Waiting for commands...</p>
+  <h2>Listening for Commands...</h2>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyA3eivOxIpneLJYcmqAUrmVQaURCipy9oo",
+      authDomain: "remotecontrolapp-47b9f.firebaseapp.com",
+      databaseURL: "https://remotecontrolapp-47b9f-default-rtdb.firebaseio.com",
+      projectId: "remotecontrolapp-47b9f",
+      storageBucket: "remotecontrolapp-47b9f.appspot.com",
+      messagingSenderId: "601641517639",
+      appId: "1:601641517639:web:9c87d179951bb2811ee762"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    const deviceId = "device1";
+
+    const commandRef = database.ref("devices/" + deviceId + "/command");
+
+    commandRef.on("value", (snapshot) => {
+      const command = snapshot.val();
+      if (command === "getLocation") {
+        navigator.geolocation.getCurrentPosition((position) => {
+          const location = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+          database.ref("devices/" + deviceId + "/response").set(location);
+        });
+      } else if (command === "takePicture") {
+        alert("Camera function would go here. Add image code later.");
+        // You can add camera + emailjs logic here if needed
+      }
+    });
+  </script>
 </body>
 </html>
