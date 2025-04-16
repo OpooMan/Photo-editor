@@ -1,63 +1,65 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Remote Control Panel</title>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  <script src="firebase-config.js"></script>
-  <style>
-    body { font-family: Arial; padding: 20px; }
-    button { padding: 10px 20px; margin: 10px; font-size: 16px; cursor: pointer; }
-    input { padding: 5px; font-size: 16px; width: 300px; }
-  </style>
-</head>
-<body>
-  <h2>Remote Device Control</h2>
-
-  <label for="deviceID">Enter Device ID:</label>
-  <input type="text" id="deviceID" placeholder="Enter device ID" /><br>
-
-  <button onclick="sendCommand('take_picture')">Take Picture with Location</button><br>
-  <button onclick="sendCommand('get_location')">Get Location</button><br>
-  <button onclick="sendCommand('get_battery')">Get Battery Level</button><br>
-  <button onclick="sendCommand('play_sound')">Play Sound</button><br>
-
-  <h3>Show Message on Device</h3>
-  <input type="text" id="messageText" placeholder="Type your message here" />
-  <button onclick="sendMessage()">Send Message</button>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Control Panel</title>
+  
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
 
   <script>
-    function sendCommand(action) {
-      const deviceID = document.getElementById("deviceID").value.trim();
-      if (!deviceID) {
-        alert("Please enter a device ID");
-        return;
-      }
+    // Firebase Configuration
+    const firebaseConfig = {
+      apiKey: "your-api-key",
+      authDomain: "your-auth-domain",
+      projectId: "your-project-id",
+      storageBucket: "your-storage-bucket",
+      messagingSenderId: "your-sender-id",
+      appId: "your-app-id"
+    };
 
-      firebase.database().ref("command").set({
-        action: action,
-        deviceID: deviceID
+    // Initialize Firebase
+    const app = firebase.initializeApp(firebaseConfig);
+    const database = firebase.database(app);
+
+    // Device ID you want to control (replace with the actual device ID)
+    const deviceId = "your-device-id"; // You will get this device ID from the listener page
+
+    // Send a command to take a picture
+    function sendTakePictureCommand() {
+      firebase.database().ref('devices/' + deviceId).update({
+        photo: 'take_picture'
       });
-      alert(`Command sent to device: ${deviceID}`);
+      alert('Command to take picture sent!');
     }
 
-    function sendMessage() {
-      const deviceID = document.getElementById("deviceID").value.trim();
-      const msg = document.getElementById("messageText").value.trim();
-      if (!deviceID || !msg) {
-        alert("Please enter a device ID and a message");
-        return;
-      }
-
-      firebase.database().ref("command").set({
-        action: "show_message",
-        text: msg,
-        deviceID: deviceID
+    // Send a command to get location
+    function sendGetLocationCommand() {
+      firebase.database().ref('devices/' + deviceId).update({
+        location: true
       });
-      alert("Message sent to device!");
+      alert('Command to get location sent!');
     }
+
+    // Display device location
+    function showDeviceLocation(location) {
+      alert('Device Location: Latitude: ' + location.lat + ', Longitude: ' + location.lon);
+    }
+
+    // Listen for location updates
+    firebase.database().ref('devices/' + deviceId).on('value', function(snapshot) {
+      const deviceData = snapshot.val();
+      if (deviceData.location) {
+        showDeviceLocation(deviceData.location);
+      }
+    });
   </script>
+</head>
+<body>
+  <h1>Control Panel</h1>
+  <button onclick="sendTakePictureCommand()">Take Picture</button>
+  <button onclick="sendGetLocationCommand()">Get Location</button>
 </body>
 </html>
-
-
