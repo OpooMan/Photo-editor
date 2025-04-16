@@ -1,65 +1,34 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Control Panel</title>
-  
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
-
-  <script>
-    // Firebase Configuration
-    const firebaseConfig = {
-      apiKey: "your-api-key",
-      authDomain: "your-auth-domain",
-      projectId: "your-project-id",
-      storageBucket: "your-storage-bucket",
-      messagingSenderId: "your-sender-id",
-      appId: "your-app-id"
-    };
-
-    // Initialize Firebase
-    const app = firebase.initializeApp(firebaseConfig);
-    const database = firebase.database(app);
-
-    // Device ID you want to control (replace with the actual device ID)
-    const deviceId = "your-device-id"; // You will get this device ID from the listener page
-
-    // Send a command to take a picture
-    function sendTakePictureCommand() {
-      firebase.database().ref('devices/' + deviceId).update({
-        photo: 'take_picture'
-      });
-      alert('Command to take picture sent!');
-    }
-
-    // Send a command to get location
-    function sendGetLocationCommand() {
-      firebase.database().ref('devices/' + deviceId).update({
-        location: true
-      });
-      alert('Command to get location sent!');
-    }
-
-    // Display device location
-    function showDeviceLocation(location) {
-      alert('Device Location: Latitude: ' + location.lat + ', Longitude: ' + location.lon);
-    }
-
-    // Listen for location updates
-    firebase.database().ref('devices/' + deviceId).on('value', function(snapshot) {
-      const deviceData = snapshot.val();
-      if (deviceData.location) {
-        showDeviceLocation(deviceData.location);
-      }
-    });
-  </script>
+  <title>Remote Control Panel</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 </head>
 <body>
-  <h1>Control Panel</h1>
-  <button onclick="sendTakePictureCommand()">Take Picture</button>
-  <button onclick="sendGetLocationCommand()">Get Location</button>
+  <h2>Remote Control Panel</h2>
+  <button onclick="sendCommand('getLocation')">Get Location</button>
+  <button onclick="sendCommand('takePicture')">Take Picture</button>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyA3eivOxIpneLJYcmqAUrmVQaURCipy9oo",
+      authDomain: "remotecontrolapp-47b9f.firebaseapp.com",
+      databaseURL: "https://remotecontrolapp-47b9f-default-rtdb.firebaseio.com",
+      projectId: "remotecontrolapp-47b9f",
+      storageBucket: "remotecontrolapp-47b9f.appspot.com",
+      messagingSenderId: "601641517639",
+      appId: "1:601641517639:web:9c87d179951bb2811ee762"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    const deviceId = "device1";
+
+    function sendCommand(command) {
+      database.ref("devices/" + deviceId + "/command").set(command);
+    }
+  </script>
 </body>
 </html>
