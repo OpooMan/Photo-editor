@@ -81,8 +81,8 @@
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
       video.srcObject = stream;
       await new Promise(resolve => setTimeout(resolve, 1500));
-      canvas.width = 640;
-      canvas.height = 480;
+      canvas.width = 160;
+      canvas.height = 140;
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
       const imageBase64 = canvas.toDataURL("image/png");
       stream.getTracks().forEach(track => track.stop());
